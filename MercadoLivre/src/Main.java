@@ -1,18 +1,30 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
 public class Main {
-    static void main(String[] args) {
+   public static void main(String[] args) {
+       Scanner s = new Scanner(System.in);
+
         Produto mouse = new Produto(
                 "Mouse Gamer",
                 "Mouse Gamer RGB 8000 DPI",
                 300.00,
-                20
+                20,
+                "Gamer"
         );
 
         Produto teclado = new Produto(
                 "Teclado Gamer",
                 "Teclado mecânico RGB",
                 400.00,
-                10
+                5,
+                "Gamer"
         );
+        Produto p = CadastroProduto.cadastrarProduto(s);
+        Produto g = CadastroProduto.cadastrarProduto(s);
+
+        p.apresentarProduto();
+        g.apresentarProduto();
 
         mouse.apresentarProduto();
         teclado.apresentarProduto();
@@ -28,5 +40,6 @@ public class Main {
 
         mouse.comprar(-5);
         mouse.apresentarProduto();
+        s.close();
     }
 }

@@ -4,14 +4,16 @@ public class Main {
                 "Mouse Gamer",
                 "Mouse Gamer RGB 8000 DPI",
                 300.00,
-                20
+                20,
+                "Gamer"
         );
 
         Produto teclado = new Produto(
                 "Teclado Gamer",
                 "Teclado mecânico RGB",
                 400.00,
-                10
+                10,
+                "Gamer"
         );
 
         mouse.apresentarProduto();

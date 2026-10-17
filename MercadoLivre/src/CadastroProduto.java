@@ -34,9 +34,17 @@ public class CadastroProduto {
                 quantidadeDisponivel = s.nextInt();
             }
         }while(!Double.isFinite(quantidadeDisponivel) || quantidadeDisponivel <= 0);
+        System.out.println("Digite a categoria do produto: ");
+        String categoria = s.next();
+        do {
+            if (categoria == null || categoria.isBlank()) {
+                System.out.println("A categoria do produto não pode ser vazio");
+                categoria = s.nextLine();
+            }
+        } while (categoria == null || categoria.isBlank());
         //Essa linha é super importante, não mexa
         s.nextLine();
-        return new Produto(nomeProduto,descricaoProduto,valor,quantidadeDisponivel);
+        return new Produto(nomeProduto, descricaoProduto, valor, quantidadeDisponivel, categoria);
     }
 
 

@@ -40,6 +40,15 @@ public class Main {
 
         mouse.comprar(-5);
         mouse.apresentarProduto();
+         // Lista com todos os produtos para a pesquisa
+        ArrayList<Produto> produtos = new ArrayList<>();
+        produtos.add(mouse);
+        produtos.add(teclado);
+        produtos.add(p);
+        produtos.add(g);
+
+        PesquisaProduto.menuPesquisa(s, produtos);
+
         s.close();
     }
 }

@@ -20,11 +20,9 @@ public class Main {
                 5,
                 "Gamer"
         );
-        Produto p = CadastroProduto.cadastrarProduto(s);
-        Produto g = CadastroProduto.cadastrarProduto(s);
 
-        p.apresentarProduto();
-        g.apresentarProduto();
+
+
 
         mouse.apresentarProduto();
         teclado.apresentarProduto();
@@ -44,8 +42,9 @@ public class Main {
         ArrayList<Produto> produtos = new ArrayList<>();
         produtos.add(mouse);
         produtos.add(teclado);
-        produtos.add(p);
-        produtos.add(g);
+
+        EditarProduto.editarProduto(s,produtos);
+
 
         PesquisaProduto.menuPesquisa(s, produtos);
 

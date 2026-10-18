@@ -30,6 +30,8 @@ public class EditarProduto {
     public static void editarProduto(Scanner s, ArrayList<Produto> produtos){
         Produto p = pesquisarProdutoPorId(s,produtos);
         if(p != null){
+            System.out.println("Produto Encontrado:");
+            p.apresentarProduto();
             int escolha = -1;
             while (escolha != 0) {
                 menuEdicao();
@@ -40,18 +42,23 @@ public class EditarProduto {
                         break;
                     case 1:
                         editarNome(s,p);
+                        System.out.println("Nome editado com sucesso");
                         break;
                     case 2:
                         editarDetalhes(s,p);
+                        System.out.println("Detalhes editado com sucesso");
                         break;
                     case 3:
                         editarCategoria(s,p);
+                        System.out.println("Categoria editado com sucesso");
                         break;
                     case 4:
                         editarPreco(s,p);
+                        System.out.println("Preço editado com sucesso");
                         break;
                     case 5:
                         editarQtd(s,p);
+                        System.out.println("Quantidade editada com sucesso");
                         break;
                     default:
                         System.out.println("Escolha inválida, digite novamente");

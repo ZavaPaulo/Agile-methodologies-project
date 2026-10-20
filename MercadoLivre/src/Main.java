@@ -9,20 +9,20 @@ public class Main {
                 "Mouse Gamer",
                 "Mouse Gamer RGB 8000 DPI",
                 300.00,
-                20
+                20,
+                "Gamer"
         );
 
         Produto teclado = new Produto(
                 "Teclado Gamer",
                 "Teclado mecânico RGB",
                 400.00,
-                5
+                5,
+                "Gamer"
         );
-        Produto p = CadastroProduto.cadastrarProduto(s);
-        Produto g = CadastroProduto.cadastrarProduto(s);
 
-        p.apresentarProduto();
-        g.apresentarProduto();
+
+
 
         mouse.apresentarProduto();
         teclado.apresentarProduto();
@@ -38,6 +38,16 @@ public class Main {
 
         mouse.comprar(-5);
         mouse.apresentarProduto();
+         // Lista com todos os produtos para a pesquisa
+        ArrayList<Produto> produtos = new ArrayList<>();
+        produtos.add(mouse);
+        produtos.add(teclado);
+
+        EditarProduto.editarProduto(s,produtos);
+
+
+        PesquisaProduto.menuPesquisa(s, produtos);
+
         s.close();
     }
 }

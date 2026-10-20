@@ -17,7 +17,28 @@ public class Catalogo {
     private static final Locale BRASIL = Locale.of("pt", "BR");
 
     // Passo 2: coleção que armazena os produtos cadastrados
-    private final List<Produto> produtos = new ArrayList<>();
+    private final List<Produto> produtos;
+
+    /**
+     * Cria um catálogo vazio, com a sua própria lista de produtos.
+     */
+    public Catalogo() {
+        this.produtos = new ArrayList<>();
+    }
+
+    /**
+     * Cria um catálogo que usa uma lista de produtos já existente.
+     * Na integração, o Main pode passar a mesma ArrayList usada pela
+     * pesquisa e pela edição; assim todos os módulos veem os mesmos dados.
+     *
+     * @param produtos a lista compartilhada de produtos (não pode ser nula)
+     */
+    public Catalogo(ArrayList<Produto> produtos) {
+        if (produtos == null) {
+            throw new IllegalArgumentException("A lista de produtos não pode ser nula!");
+        }
+        this.produtos = produtos;
+    }
 
     /**
      * Adiciona um produto ao catálogo.
@@ -35,11 +56,11 @@ public class Catalogo {
      * Passo 3: carrega alguns produtos de exemplo para os testes iniciais.
      */
     public void carregarProdutosExemplo() {
-        adicionarProduto(new Produto("Mouse Gamer", "Mouse Gamer RGB 8000 DPI", 300.00, 20));
-        adicionarProduto(new Produto("Teclado Mecânico", "Teclado mecânico RGB switch blue", 400.00, 5));
-        adicionarProduto(new Produto("Headset Bluetooth", "Headset sem fio com microfone", 249.90, 12));
-        adicionarProduto(new Produto("Monitor 24\"", "Monitor Full HD 144Hz", 1299.99, 3));
-        adicionarProduto(new Produto("Cadeira Gamer", "Cadeira ergonômica reclinável", 899.00, 0));
+        adicionarProduto(new Produto("Mouse Gamer", "Mouse Gamer RGB 8000 DPI", 300.00, 20, "Periféricos"));
+        adicionarProduto(new Produto("Teclado Mecânico", "Teclado mecânico RGB switch blue", 400.00, 5, "Periféricos"));
+        adicionarProduto(new Produto("Headset Bluetooth", "Headset sem fio com microfone", 249.90, 12, "Áudio"));
+        adicionarProduto(new Produto("Monitor 24\"", "Monitor Full HD 144Hz", 1299.99, 3, "Monitores"));
+        adicionarProduto(new Produto("Cadeira Gamer", "Cadeira ergonômica reclinável", 899.00, 0, "Móveis"));
     }
 
     /**

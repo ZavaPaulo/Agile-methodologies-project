@@ -43,8 +43,8 @@ public class Main {
         produtos.add(mouse);
         produtos.add(teclado);
 
+        EditarProduto.deletarProduto(produtos,mouse);
         EditarProduto.editarProduto(s,produtos);
-
 
         PesquisaProduto.menuPesquisa(s, produtos);
 

@@ -10,7 +10,7 @@ public class EditarProduto {
      * @param produtos A lista de produtos registrados
      * @return Nulo se não foi encontrado o ID digitado ou o produto com o ID solicitado
      */
-    public static Produto pesquisarProdutoPorId(Scanner s, ArrayList<Produto> produtos){
+    private static Produto pesquisarProdutoPorId(Scanner s, ArrayList<Produto> produtos){
         System.out.println("Digite o ID do produto que quer editar");
         int idPesquisar = verificarIntValido(s);
         for (Produto p : produtos) {
@@ -68,31 +68,32 @@ public class EditarProduto {
         s.nextLine();
     }
 
-    public static void editarNome(Scanner s, Produto p){
+    private static void editarNome(Scanner s, Produto p){
         s.nextLine();
         System.out.println("Digite o novo nome:");
         p.setNomeProduto(s.nextLine());
     }
-    public static void editarDetalhes(Scanner s, Produto p){
+    private static void editarDetalhes(Scanner s, Produto p){
         s.nextLine();
         System.out.println("Digite a nova descrição:");
         p.setDetalheProduto(s.nextLine());
     }
-    public static void editarCategoria(Scanner s,Produto p){
+    private static void editarCategoria(Scanner s,Produto p){
         System.out.println("Digite a nova categoria:");
         s.nextLine();
         p.setCategoria(s.nextLine());
     }
-    public static void editarPreco(Scanner s,Produto p){
+    private static void editarPreco(Scanner s,Produto p){
         System.out.println("Digite o novo preço");
         double numero = verificarDoubleValido(s);
         p.setValor(numero);
     }
-    public static void editarQtd(Scanner s,Produto p){
+    private static void editarQtd(Scanner s,Produto p){
         System.out.println("Digite a nova quantidade");
         int numero = verificarIntValido(s);
         p.setQuantidadeDisponivel(numero);
     }
+
 
     /**
      * Exibe um menu com informações do que fazer
@@ -105,6 +106,18 @@ public class EditarProduto {
         System.out.println("4 - Preço do produto");
         System.out.println("5 - Quantidade disponível");
         System.out.println("0 - Sair");
+    }
+
+    /**
+     * Pega a lista de produtos, remove o produto da lista e retorna uma lista sem o produto removido
+     *
+     * @param produtos A lista de produtos
+     * @param pr O produto que quer remover
+     * @return Uma lista sem o produto removido
+     */
+    public static ArrayList<Produto> deletarProduto(ArrayList<Produto> produtos, Produto pr){
+        produtos.remove(pr);
+        return produtos;
     }
 
     /**

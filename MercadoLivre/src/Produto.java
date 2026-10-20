@@ -9,14 +9,16 @@ public class Produto implements Serializable {
     private double valor;
     private int quantidadeDisponivel;
     private final int idProduto;
+    private String categoria;
     private static final long serialVersionUID = 1L;
 
     //Construtor do produto
-    public Produto(String nomeProduto, String detalheProduto, double valor, int quantidadeDisponivel) {
+    public Produto(String nomeProduto, String detalheProduto, double valor, int quantidadeDisponivel, String categoria) {
         setNomeProduto(nomeProduto);
         setDetalheProduto(detalheProduto);
         setValor(valor);
         setQuantidadeDisponivel(quantidadeDisponivel);
+        setCategoria(categoria);
         this.idProduto = proximoId.getAndIncrement();
     }
 
@@ -71,6 +73,19 @@ public class Produto implements Serializable {
         this.quantidadeDisponivel = quantidadeDisponivel;
     }
 
+    public String getCategoria() {
+        return categoria;
+    }
+    public void setCategoria(String categoria) {
+        if (categoria == null || categoria.isBlank()) {
+            throw new IllegalArgumentException(
+                    "A categoria do produto não pode estar vazia!"
+            );
+        }
+
+        this.categoria = categoria;
+    }
+
     public int getIdProduto() {
         return idProduto;
     }
@@ -82,6 +97,7 @@ public class Produto implements Serializable {
                 "\nDescrição: '" + detalheProduto + '\'' +
                 "\nValor: R$ " + valor +
                 "\nEstoque: " + quantidadeDisponivel +
+                "\nCategoria: " + categoria +
                 "\nEsgotado: " + estaEsgotado();
     }
 
@@ -130,7 +146,7 @@ public class Produto implements Serializable {
 
     //Apresentar o produto
     public void apresentarProduto() {
-        System.out.println("= = = = = = = = =");
+        System.out.println("= = = = = = = = = = = = =");
         System.out.println(toString());
         System.out.println();
     }

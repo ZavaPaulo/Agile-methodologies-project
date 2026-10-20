@@ -32,7 +32,7 @@ public class TesteCatalogo {
         // Teste 2: um produto
         System.out.println("\n### TESTE 2: um produto\n");
         Catalogo umProduto = new Catalogo();
-        Produto mouse = new Produto("Mouse Gamer", "Mouse RGB", 300.00, 20);
+        Produto mouse = new Produto("Mouse Gamer", "Mouse RGB", 300.00, 20, "Periféricos");
         umProduto.adicionarProduto(mouse);
         umProduto.exibirCatalogo();
         verificar("Catálogo não está vazio", !umProduto.estaVazio());
@@ -71,7 +71,14 @@ public class TesteCatalogo {
         verificar("Lista não pode ser apagada por fora", listaProtegida
                 && varios.quantidadeProdutos() == 5);
 
-        // Teste 5: formatação de preço
+        // Teste 5: lista compartilhada com os outros módulos
+        java.util.ArrayList<Produto> listaDoMain = new java.util.ArrayList<>();
+        Catalogo compartilhado = new Catalogo(listaDoMain);
+        listaDoMain.add(mouse);
+        verificar("Catálogo enxerga produto adicionado na lista compartilhada",
+                compartilhado.quantidadeProdutos() == 1);
+
+        // Teste 6: formatação de preço
         verificar("Preço no formato brasileiro",
                 Catalogo.formatarPreco(1299.99).equals("R$ 1.299,99"));
 

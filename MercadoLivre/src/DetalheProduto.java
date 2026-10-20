@@ -56,8 +56,7 @@ public class DetalheProduto {
         // Passo 4: nome, descrição e categoria
         System.out.println("ID:          " + p.getIdProduto());
         System.out.println("Nome:        " + p.getNomeProduto());
-        // TODO: exibir a categoria quando o campo for adicionado ao Produto:
-        // System.out.println("Categoria:   " + p.getCategoria());
+        System.out.println("Categoria:   " + p.getCategoria());
 
         // Passo 5: especificações completas
         System.out.println("Descrição:   " + p.getDetalheProduto());

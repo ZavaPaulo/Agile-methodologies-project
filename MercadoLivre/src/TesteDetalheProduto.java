@@ -38,6 +38,8 @@ public class TesteDetalheProduto {
         verificar("Exibe produto existente", detalhe.exibirDetalhes(idValido));
         verificar("Busca retorna o produto certo",
                 detalhe.buscarPorId(idValido) == primeiro);
+        verificar("Produto tem a categoria cadastrada",
+                "Periféricos".equals(detalhe.buscarPorId(idValido).getCategoria()));
 
         // Teste 2: produto esgotado
         System.out.println("\n### TESTE 2: produto esgotado\n");

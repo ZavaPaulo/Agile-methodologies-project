@@ -399,11 +399,14 @@ public class MarketplaceServer {
             double desconto = "pix".equals(formaPagamento) ? subtotal * 0.05 : 0.0;
             double total = subtotal - desconto;
 
-            // Retira do carrinho apenas os itens que foram comprados.
-            for (Map.Entry<Integer, Integer> item : itensSolicitados.entrySet()) {
-                int restante = carrinho.getOrDefault(item.getKey(), 0) - item.getValue();
-                if (restante > 0) carrinho.put(item.getKey(), restante);
-                else carrinho.remove(item.getKey());
+            // "Comprar agora" não deve remover unidades que já estavam no carrinho.
+            boolean compraDireta = Boolean.TRUE.equals(corpo.get("compraDireta"));
+            if (!compraDireta) {
+                for (Map.Entry<Integer, Integer> item : itensSolicitados.entrySet()) {
+                    int restante = carrinho.getOrDefault(item.getKey(), 0) - item.getValue();
+                    if (restante > 0) carrinho.put(item.getKey(), restante);
+                    else carrinho.remove(item.getKey());
+                }
             }
 
             Map<String, Object> resposta = new LinkedHashMap<>();

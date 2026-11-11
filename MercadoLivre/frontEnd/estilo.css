@@ -121,24 +121,3 @@ header { flex-wrap: wrap; }
   .form-grid { grid-template-columns: 1fr; }
   .aviso-replica { text-align: left; }
 }
-
-
-/* Paleta própria do projeto: evita reproduzir a identidade visual da marca de referência. */
-:root {
-  --amarelo: #17243b;
-  --azul: #6757d9;
-  --azul-escuro: #5142b5;
-  --verde: #087f75;
-}
-header {
-  color: #fff;
-  background: #17243b;
-}
-.marca small, .aviso-replica {
-  color: #d5deed;
-}
-.carrinho-link { color: #fff; }
-.busca button { color: #17243b; }
-.hero { background: #087f75; }
-.selo-replica { color: #5142b5; }
-.hero .selo-replica { color: #fff; }

@@ -43,7 +43,7 @@ public class MarketplaceServer {
         // Carrega os mesmos produtos de demonstração já usados pelo projeto.
         CATALOGO.carregarProdutosExemplo();
 
-        HttpServer servidor = HttpServer.create(new InetSocketAddress(porta), 0);
+        HttpServer servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", porta), 0);
         servidor.createContext("/api", MarketplaceServer::tratarApi);
         servidor.createContext("/", MarketplaceServer::servirFrontend);
         servidor.setExecutor(Executors.newCachedThreadPool());

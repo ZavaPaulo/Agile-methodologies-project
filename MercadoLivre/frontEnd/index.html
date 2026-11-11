@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mercado Livre (réplica acadêmica)</title>
+    <!-- Card do Trello: "Fazer Página Inicial" (FrontEnd) -->
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+
+<main class="pagina">
+    <section class="hero" id="hero">
+        <h1>Frete grátis em todas as compras</h1>
+        <p>Encontre o que você procura e compre em poucos passos.</p>
+    </section>
+
+    <nav class="categorias" id="categorias" aria-label="Categorias"></nav>
+    <div class="contagem" id="contagem" aria-live="polite"></div>
+    <section class="grade" id="grade"></section>
+</main>
+
+<script src="app.js"></script>
+<script>
+    const params = new URLSearchParams(location.search);
+    const consulta = params.get("q") || "";
+    let categoria = "";
+
+    montarCabecalho(consulta);
+    if (consulta) document.getElementById("hero").style.display = "none";
+
+    function montarCategorias() {
+      const nav = document.getElementById("categorias");
+      nav.innerHTML = "";
+      ["", ...listarCategorias()].forEach((c) => {
+        const b = document.createElement("button");
+        b.className = "chip" + (c === categoria ? " ativo" : "");
+        b.textContent = c || "Todas";
+        b.addEventListener("click", () => { categoria = c; render(); });
+        nav.appendChild(b);
+      });
+    }
+
+    function cartaoProduto(p) {
+      const esgotado = p.quantidadeDisponivel === 0;
+      const extra = esgotado
+        ? `<div class="esgotado">Esgotado</div>`
+        : `<div class="parcela">12x de ${formatarPreco(p.valor / 12)} sem juros</div>`;
+      return `
+        <a class="card${esgotado ? " sem-estoque" : ""}" href="produto.html?id=${p.idProduto}">
+          <div class="foto">${icone(p)}</div>
+          <div class="info">
+            <div class="nome">${p.nomeProduto}</div>
+            <div class="preco">${formatarPreco(p.valor)}</div>
+            ${extra}
+          </div>
+        </a>`;
+    }
+
+    function render() {
+      montarCategorias();
+      const lista = buscar(consulta, categoria);
+      const grade = document.getElementById("grade");
+      const contagem = document.getElementById("contagem");
+
+      if (lista.length === 0) {
+        contagem.textContent = "";
+        grade.innerHTML = `
+          <div class="caixa vazio" style="grid-column: 1 / -1">
+            <h2>Nenhum produto encontrado</h2>
+            <p>Confira a ortografia, use menos palavras ou escolha outra categoria.</p>
+            <a class="btn auto" href="index.html">Ver todos os produtos</a>
+          </div>`;
+        return;
+      }
+      contagem.textContent = lista.length + " produto(s)" + (consulta ? ` para "${consulta}"` : "");
+      grade.innerHTML = lista.map(cartaoProduto).join("");
+    }
+
+    render();
+</script>
+</body>
+</html>

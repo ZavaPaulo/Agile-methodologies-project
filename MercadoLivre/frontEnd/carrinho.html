@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Carrinho · Mercado Livre (réplica acadêmica)</title>
+    <!-- Card do Trello: "Fazer tela carrinho" (FrontEnd) -->
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina" id="conteudo"></main>
+
+<script src="app.js"></script>
+<script>
+    montarCabecalho();
+    const conteudo = document.getElementById("conteudo");
+    let aviso = "";
+
+    // Só mostra itens de produtos que ainda existem no catálogo
+    function itensValidos() {
+      return lerCarrinho()
+        .map((i) => ({ ...i, produto: buscarPorId(i.id) }))
+        .filter((i) => i.produto);
+    }
+
+    function render() {
+      const itens = itensValidos();
+
+      if (itens.length === 0) {
+        conteudo.innerHTML = `
+          <div class="caixa vazio">
+            <h1>Seu carrinho está vazio</h1>
+            <p>Escolha um produto e toque em "Adicionar ao carrinho".</p>
+            <a class="btn auto" href="index.html">Ver produtos</a>
+          </div>`;
+        return;
+      }
+
+      const total = itens.reduce((soma, i) => soma + i.produto.valor * i.qtd, 0);
+      const unidades = itens.reduce((soma, i) => soma + i.qtd, 0);
+
+      conteudo.innerHTML = `
+        <div class="carrinho">
+          <section class="caixa">
+            <h1>Carrinho</h1>
+            <div class="erro" role="alert">${aviso}</div>
+            ${itens.map((i) => `
+              <div class="linha-item" data-id="${i.id}">
+                <div class="foto">${icone(i.produto)}</div>
+                <div>
+                  <a class="nome" href="produto.html?id=${i.id}">${i.produto.nomeProduto}</a>
+                  <div class="suave" style="font-size: 13px">${formatarPreco(i.produto.valor)} cada · estoque: ${i.produto.quantidadeDisponivel}</div>
+                  <div class="controles">
+                    <label>Quantidade:
+                      <input type="number" min="1" max="${i.produto.quantidadeDisponivel}" value="${i.qtd}" data-acao="qtd" aria-label="Quantidade de ${i.produto.nomeProduto}">
+                    </label>
+                    <button class="remover" data-acao="remover">Remover</button>
+                  </div>
+                </div>
+                <div class="valor">
+                  ${formatarPreco(i.produto.valor * i.qtd)}
+                  <br><button class="btn sec" data-acao="comprar">Comprar este item</button>
+                </div>
+              </div>`).join("")}
+          </section>
+
+          <aside class="caixa resumo">
+            <h2>Resumo da compra</h2>
+            <div class="item"><span>Produtos (${unidades})</span><span>${formatarPreco(total)}</span></div>
+            <div class="item"><span>Frete</span><span class="verde">Grátis</span></div>
+            <div class="item total"><span>Total</span><span>${formatarPreco(total)}</span></div>
+            <div class="nota">Por enquanto o pagamento é feito um produto por vez. Use "Comprar este item" no produto que quiser levar.</div>
+          </aside>
+        </div>`;
+    }
+
+    // Um único listener para todos os botões e campos da lista
+    conteudo.addEventListener("click", (ev) => {
+      const acao = ev.target.dataset.acao;
+      const linha = ev.target.closest(".linha-item");
+      if (!linha || acao === "qtd") return;
+      const id = Number(linha.dataset.id);
+
+      if (acao === "remover") {
+        salvarCarrinho(lerCarrinho().filter((i) => i.id !== id));
+        aviso = "";
+        render();
+      } else if (acao === "comprar") {
+        comprarAgora(id, lerCarrinho().find((i) => i.id === id).qtd);
+      }
+    });
+
+    conteudo.addEventListener("change", (ev) => {
+      if (ev.target.dataset.acao !== "qtd") return;
+      const id = Number(ev.target.closest(".linha-item").dataset.id);
+      const estoque = buscarPorId(id).quantidadeDisponivel;
+      let n = Math.trunc(Number(ev.target.value));
+      aviso = "";
+
+      if (!Number.isFinite(n) || n < 1) {
+        n = 1;
+        aviso = "A quantidade mínima é 1. Para tirar o produto, use Remover.";
+      } else if (n > estoque) {
+        n = estoque;
+        aviso = `Estoque insuficiente: só há ${estoque} unidade(s) disponível(is).`;
+      }
+      salvarCarrinho(lerCarrinho().map((i) => i.id === id ? { ...i, qtd: n } : i));
+      render();
+    });
+
+    render();
+</script>
+</body>
+</html>

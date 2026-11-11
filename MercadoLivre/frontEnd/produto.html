@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Produto · Mercado Livre (réplica acadêmica)</title>
+    <!-- Card do Trello: "Fazer Tela exibindo produto" (FrontEnd). Abrir com produto.html?id=1 -->
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina" id="conteudo"></main>
+
+<script src="app.js"></script>
+<script>
+    montarCabecalho();
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const p = buscarPorId(id);
+    const conteudo = document.getElementById("conteudo");
+
+    if (!p) {
+      conteudo.innerHTML = `
+        <div class="caixa vazio">
+          <h1>Produto não encontrado</h1>
+          <p>Esse produto não existe ou foi removido.</p>
+          <a class="btn auto" href="index.html">Ver todos os produtos</a>
+        </div>`;
+    } else {
+      document.title = p.nomeProduto + " · Mercado Livre (réplica acadêmica)";
+      const esgotado = p.quantidadeDisponivel === 0;
+      const estoque = esgotado
+        ? `<span style="color: var(--vermelho); font-weight: 600">Esgotado</span>`
+        : `<strong>Estoque:</strong> ${p.quantidadeDisponivel} unidade(s)`;
+
+      conteudo.innerHTML = `
+        <div class="caminho"><a href="index.html">Início</a> › <a href="index.html">${p.categoria}</a> › ${p.nomeProduto}</div>
+        <div class="produto">
+          <section>
+            <div class="foto">${icone(p)}</div>
+            <div class="caixa descricao">
+              <h2>Descrição</h2>
+              <p>${p.detalheProduto}</p>
+              <p class="suave">Categoria: ${p.categoria} · Código do produto: ${p.idProduto}</p>
+            </div>
+          </section>
+
+          <aside class="caixa">
+            <h1>${p.nomeProduto}</h1>
+            <div class="preco">${formatarPreco(p.valor)}</div>
+            <div class="verde">12x de ${formatarPreco(p.valor / 12)} sem juros</div>
+            <div class="verde" style="margin-top: 4px">Frete grátis</div>
+            <div class="estoque">${estoque}</div>
+
+            <div id="areaCompra">
+              <div class="qtd-linha">
+                <label for="qtd">Quantidade:</label>
+                <input type="number" id="qtd" value="1" min="1" max="${p.quantidadeDisponivel}" inputmode="numeric">
+              </div>
+              <div class="erro" id="erroQtd" role="alert"></div>
+              <div class="item suave" style="font-size: 14px">Subtotal: <strong id="subtotal" style="color: var(--texto)"></strong></div>
+              <div class="acoes">
+                <button class="btn" id="btnComprar">Comprar agora</button>
+                <button class="btn sec" id="btnCarrinho">Adicionar ao carrinho</button>
+              </div>
+              <div class="ok" id="msg" aria-live="polite"></div>
+            </div>
+          </aside>
+        </div>`;
+
+      if (esgotado) {
+        document.getElementById("areaCompra").innerHTML =
+          `<p class="suave">Este produto está esgotado. Volte mais tarde ou veja outros produtos.</p>
+           <a class="btn" href="index.html">Ver outros produtos</a>`;
+      } else {
+        iniciarCompra();
+      }
+    }
+
+    // Mesmas regras do SelecaoProduto.java: inteiro positivo e dentro do estoque
+    function iniciarCompra() {
+      const campo = document.getElementById("qtd");
+      const erro = document.getElementById("erroQtd");
+
+      function lerQuantidade() {
+        const n = Number(campo.value);
+        let msg = "";
+        if (campo.value.trim() === "" || !Number.isInteger(n) || n <= 0) {
+          msg = "Quantidade inválida: digite um número inteiro maior que zero.";
+        } else if (n > p.quantidadeDisponivel) {
+          msg = `Estoque insuficiente: só há ${p.quantidadeDisponivel} unidade(s) disponível(is).`;
+        }
+        campo.classList.toggle("invalido", msg !== "");
+        erro.textContent = msg;
+        document.getElementById("subtotal").textContent = msg ? "—" : formatarPreco(p.valor * n);
+        return msg ? null : n;
+      }
+
+      campo.addEventListener("input", () => { document.getElementById("msg").innerHTML = ""; lerQuantidade(); });
+      lerQuantidade();
+
+      document.getElementById("btnComprar").addEventListener("click", () => {
+        const n = lerQuantidade();
+        if (n !== null) comprarAgora(p.idProduto, n);
+      });
+
+      document.getElementById("btnCarrinho").addEventListener("click", () => {
+        const n = lerQuantidade();
+        if (n === null) return;
+        const msg = document.getElementById("msg");
+        if (adicionarAoCarrinho(p.idProduto, n)) {
+          msg.innerHTML = `Adicionado ao carrinho. <a href="carrinho.html">Ver carrinho</a>`;
+          erro.textContent = "";
+        } else {
+          msg.innerHTML = "";
+          erro.textContent = `Você já tem ${qtdNoCarrinho(p.idProduto)} no carrinho e o estoque é de ${p.quantidadeDisponivel} unidade(s).`;
+        }
+      });
+    }
+</script>
+</body>
+</html>

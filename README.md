@@ -1,4 +1,7 @@
-# Agile Methodologies Projects
+# Marketplace Acadêmico — Réplica independente
+
+> **AVISO:** Este projeto é somente uma réplica acadêmica independente, sem vínculo, afiliação, patrocínio ou endosso do Mercado Livre. Não é um serviço oficial e não processa pagamentos reais.
+
 ## Documentação técnica do sistema
 
 **Projeto:** Réplica simplificada de um marketplace inspirado no Mercado Livre  
@@ -13,7 +16,7 @@
 
 O **Agile Methodologies Projects** é um projeto acadêmico de desenvolvimento de software cujo objetivo é construir uma réplica simplificada de um marketplace, inspirada na experiência de navegação e compra do Mercado Livre.
 
-A aplicação executada pelo terminal deverá permitir o gerenciamento básico de anúncios e o fluxo de compra de produtos. O projeto também utiliza práticas de organização ágil para distribuir responsabilidades, acompanhar o progresso e facilitar a colaboração entre os integrantes.
+A aplicação oferece uma interface web para catálogo, pesquisa, detalhes de produtos, carrinho e compra simulada. O backend Java mantém as regras de negócio; a interface de terminal permanece como implementação legada e apoio aos testes. O projeto também utiliza práticas de organização ágil para distribuir responsabilidades, acompanhar o progresso e facilitar a colaboração entre os integrantes.
 
 > **Nota de escopo:** este documento descreve os requisitos identificados no planejamento do projeto e as decisões técnicas discutidas durante o desenvolvimento. Recursos ainda não implementados devem ser considerados planejados, não entregues.
 
@@ -26,7 +29,7 @@ Desenvolver uma aplicação de marketplace simplificada que permita cadastrar, c
 ### 2.2 Objetivos específicos
 
 - Implementar operações de cadastro, consulta, atualização e exclusão de produtos (CRUD).
-- Apresentar os produtos e as opções de operação diretamente no terminal.
+- Apresentar os produtos em uma interface web conectada à API Java.
 - Permitir adicionar e remover produtos do carrinho.
 - Calcular subtotais e o valor total da compra.
 - Simular a finalização de uma compra.
@@ -75,14 +78,17 @@ Não há confirmação, na definição atual do projeto, de integração com pag
 A arquitetura abaixo é uma proposta de organização por responsabilidades para uma aplicação executada pelo terminal, conforme a definição atual do projeto.
 
 ```text
-Interface de terminal (CLI)
+Frontend (HTML, CSS e JavaScript)
             |
+            | HTTP / JSON (mesma origem)
             v
-Camada de aplicação / serviços
+MarketplaceServer (API REST Java / JDK HttpServer)
             |
-            +------> Catálogo e gerenciamento de produtos
+            +------> Catalogo / Produto / PesquisaProduto
             |
-            +------> Carrinho e finalização de compra
+            +------> ItemCompra / DadosEntrega / Checkout
+            |
+            +------> RegistroPedidos / Pedido
             |
             v
 Coleções em memória durante a execução
@@ -108,7 +114,7 @@ A classe `Produto` representa um anúncio do catálogo. A implementação Java d
 
 | Atributo | Tipo previsto | Finalidade |
 |---|---|---|
-| `idProduto` | `String` | Identificador único do produto. |
+| `idProduto` | `int` | Identificador único do produto. |
 | `nomeProduto` | `String` | Nome exibido no catálogo. |
 | `detalheProduto` | `String` | Descrição do produto. |
 | `valor` | `double` | Preço unitário na implementação inicial. |
@@ -241,7 +247,7 @@ Antes de publicar este documento como versão final, preencher:
 - **Execução:** comando para iniciar a aplicação.
 - **Testes:** comando para executar a suíte de testes.
 
-Não foram incluídos comandos de execução específicos porque a estrutura real e a configuração atual do projeto não foram verificadas nesta documentação. Os dados são mantidos em memória durante a execução; esta documentação não prevê gravação de produtos em arquivo local.
+A aplicação web integrada usa o módulo `jdk.httpserver` do próprio JDK e não exige framework ou biblioteca externa. Os produtos, carrinhos e pedidos ficam em memória e são reiniciados quando o servidor é encerrado.
 
 ## 12. Referências do projeto
 
@@ -258,3 +264,76 @@ Não foram incluídos comandos de execução específicos porque a estrutura rea
 | 1.0 | 16/10/2026 | Criação da documentação inicial de visão geral, escopo, regras de negócio, arquitetura proposta, testes e organização do projeto. |
 
 **Responsáveis pela manutenção da documentação:** equipe do Agile Methodologies Projects.
+
+
+## 13. Integração do frontend com o backend
+
+A branch \`IntegracaoFronBack\` conecta as páginas web ao backend Java por uma API HTTP que trafega JSON. O servidor também entrega os arquivos estáticos do frontend na mesma origem, evitando configuração de CORS para a execução local.
+
+### 13.1 Pré-requisitos
+
+- JDK 25, conforme o nível de linguagem configurado no projeto IntelliJ.
+- Git para obter a branch.
+- Navegador atualizado.
+
+### 13.2 Como executar
+
+Na raiz do repositório, compile as classes Java:
+
+\`\`\`bash
+javac --add-modules jdk.httpserver -encoding UTF-8 -d out/production/Agile-methodologies-project MercadoLivre/src/*.java
+\`\`\`
+
+Inicie o servidor:
+
+\`\`\`bash
+java --add-modules jdk.httpserver -Dmarketplace.frontend=MercadoLivre/frontEnd -cp out/production/Agile-methodologies-project MarketplaceServer
+\`\`\`
+
+Abra \`http://localhost:8080\` no navegador. Para usar outra porta, informe o número como primeiro argumento, por exemplo \`MarketplaceServer 9090\`.
+
+### 13.3 Endpoints da API
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | \`/api/health\` | Verifica se o servidor está ativo |
+| GET | \`/api/produtos?q=&categoria=\` | Lista, pesquisa e filtra produtos |
+| GET | \`/api/produtos/{id}\` | Consulta produto pelo ID |
+| POST | \`/api/produtos\` | Cadastra produto |
+| PUT | \`/api/produtos/{id}\` | Atualiza produto |
+| DELETE | \`/api/produtos/{id}\` | Exclui produto |
+| GET | \`/api/carrinho\` | Consulta carrinho da sessão |
+| POST | \`/api/carrinho/itens\` | Adiciona item ao carrinho |
+| PATCH | \`/api/carrinho/itens/{id}\` | Atualiza quantidade |
+| DELETE | \`/api/carrinho/itens/{id}\` | Remove item |
+| DELETE | \`/api/carrinho\` | Limpa carrinho |
+| POST | \`/api/compras/finalizar\` | Registra compra simulada |
+| GET | \`/api/pedidos\` | Lista pedidos em memória |
+
+### 13.4 Sessão e checkout
+
+O carrinho é armazenado no servidor e separado por cookie de sessão do navegador. O frontend não mantém uma lista paralela de produtos nem decide o estoque. O backend valida quantidade, disponibilidade e os dados de entrega antes de registrar a compra.
+
+A classe \`Pedido\` existente representa um produto por pedido. Por compatibilidade com o modelo atual, uma compra com vários produtos gera um pedido por item, com o mesmo endereço e modalidade simulada. A modalidade Pix mantém o desconto demonstrativo de 5%.
+
+**Nenhum pagamento é processado.** A aplicação não coleta número de cartão, validade ou CVV, não emite boleto e não se conecta a serviços financeiros.
+
+### 13.5 Limitações e segurança
+
+- Produtos, carrinhos e pedidos são mantidos em memória; reiniciar o servidor reinicia os dados.
+- A API não possui autenticação ou autorização administrativa. Não deve ser exposta diretamente à internet.
+- Os dados de entrega são exemplos acadêmicos; não use dados pessoais reais.
+- O conversor \`Json.java\` é uma implementação pequena para os formatos utilizados pela API. Caso o projeto cresça, recomenda-se adotar uma biblioteca JSON mantida, como Jackson.
+- Para implantação real, seriam necessários autenticação, autorização, persistência transacional, proteção contra abuso, logs e controles de privacidade.
+
+### 13.6 Arquivos da integração
+
+- \`MercadoLivre/src/MarketplaceServer.java\`: servidor HTTP, endpoints REST e entrega das páginas.
+- \`MercadoLivre/src/Json.java\`: conversão entre objetos Java e JSON.
+- \`MercadoLivre/src/Catalogo.java\`: busca e exclusão por identificador.
+- \`MercadoLivre/frontEnd/app.js\`: cliente HTTP compartilhado.
+- \`MercadoLivre/frontEnd/index.html\`: catálogo e pesquisa.
+- \`MercadoLivre/frontEnd/produto.html\`: detalhe e ações do produto.
+- \`MercadoLivre/frontEnd/carrinho.html\`: carrinho por sessão do servidor.
+- \`MercadoLivre/frontEnd/pagamento.html\`: entrega e compra simulada.
+- \`MercadoLivre/frontEnd/estilo.css\`: estilos e identificação acadêmica.

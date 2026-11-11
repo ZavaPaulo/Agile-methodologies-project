@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carrinho — Marketplace acadêmico</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina" id="conteudo"><p class="carregando">Carregando carrinho...</p></main>
+<script src="app.js"></script>
+<script>
+  montarCabecalho();
+  const conteudo = document.getElementById("conteudo");
+
+  async function renderizar() {
+    try {
+      const carrinho = await carregarCarrinho();
+      const itens = carrinho.itens || [];
+      if (!itens.length) {
+        conteudo.innerHTML = '<div class="caixa vazio"><h1>Seu carrinho está vazio</h1>' +
+          '<p>Escolha um produto no catálogo para começar.</p><a class="btn auto" href="index.html">Ver produtos</a></div>';
+        atualizarBadge();
+        return;
+      }
+      const unidades = itens.reduce(function (total, item) { return total + item.quantidade; }, 0);
+      conteudo.innerHTML =
+        '<div class="carrinho"><section class="caixa"><h1>Carrinho</h1>' +
+        itens.map(function (item) {
+          const p = item.produto;
+          return '<div class="linha-item" data-id="' + p.idProduto + '">' +
+            '<div class="foto">' + icone(p) + '</div><div>' +
+            '<a class="nome" href="produto.html?id=' + p.idProduto + '">' + escaparHtml(p.nomeProduto) + '</a>' +
+            '<div class="suave">' + formatarPreco(p.valor) + ' cada · estoque: ' + p.quantidadeDisponivel + '</div>' +
+            '<div class="controles"><label>Quantidade: <input type="number" min="1" max="' + p.quantidadeDisponivel +
+            '" value="' + item.quantidade + '" data-acao="qtd" aria-label="Quantidade de ' + escaparHtml(p.nomeProduto) + '"></label>' +
+            '<button class="remover" type="button" data-acao="remover">Remover</button></div>' +
+            '<div class="erro linha-erro" role="alert"></div></div>' +
+            '<div class="valor">' + formatarPreco(item.subtotal) + '</div></div>';
+        }).join("") +
+        '</section><aside class="caixa resumo"><h2>Resumo da compra</h2>' +
+        '<div class="item"><span>Produtos (' + unidades + ')</span><span>' + formatarPreco(carrinho.subtotal) + '</span></div>' +
+        '<div class="item"><span>Entrega simulada</span><span class="verde">Grátis</span></div>' +
+        '<div class="item total"><span>Total</span><span>' + formatarPreco(carrinho.total) + '</span></div>' +
+        '<a class="btn" href="pagamento.html">Continuar para pagamento simulado</a>' +
+        '<div class="nota">Compra exclusivamente acadêmica. Nenhum pagamento real será efetuado.</div>' +
+        '</aside></div>';
+      atualizarBadge();
+    } catch (erro) {
+      conteudo.innerHTML = '<div class="caixa vazio"><h1>Não foi possível carregar o carrinho</h1><p>' +
+        escaparHtml(erro.message) + '</p></div>';
+    }
+  }
+
+  conteudo.addEventListener("click", async function (evento) {
+    const acao = evento.target.dataset.acao;
+    const linha = evento.target.closest(".linha-item");
+    if (!linha || acao !== "remover") return;
+    try {
+      await removerDoCarrinho(Number(linha.dataset.id));
+      await renderizar();
+    } catch (erro) {
+      linha.querySelector(".linha-erro").textContent = erro.message;
+    }
+  });
+
+  conteudo.addEventListener("change", async function (evento) {
+    if (evento.target.dataset.acao !== "qtd") return;
+    const linha = evento.target.closest(".linha-item");
+    try {
+      const quantidade = Number(evento.target.value);
+      if (!Number.isInteger(quantidade) || quantidade <= 0) {
+        throw new Error("A quantidade deve ser um inteiro maior que zero.");
+      }
+      await atualizarQuantidadeCarrinho(Number(linha.dataset.id), quantidade);
+      await renderizar();
+    } catch (erro) {
+      linha.querySelector(".linha-erro").textContent = erro.message;
+    }
+  });
+
+  renderizar();
+</script>
+</body>
+</html>

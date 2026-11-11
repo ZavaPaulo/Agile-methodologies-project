@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marketplace acadêmico — réplica independente</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina">
+  <section class="hero" id="hero">
+    <span class="selo-replica">SOMENTE UMA RÉPLICA ACADÊMICA INDEPENDENTE</span>
+    <h1>Encontre produtos para o seu dia a dia</h1>
+    <p>Projeto educacional de marketplace. Não representa nem possui vínculo com o Mercado Livre.</p>
+  </section>
+  <nav class="categorias" id="categorias" aria-label="Categorias"></nav>
+  <div class="contagem" id="contagem" aria-live="polite"></div>
+  <p class="mensagem-erro" id="erro" role="alert" hidden></p>
+  <section class="grade" id="grade" aria-live="polite"></section>
+</main>
+<script src="app.js"></script>
+<script>
+  const parametros = new URLSearchParams(location.search);
+  const consulta = parametros.get("q") || "";
+  let categoria = "";
+  let produtos = [];
+  montarCabecalho(consulta);
+  if (consulta) document.getElementById("hero").hidden = true;
+
+  async function carregarCategorias() {
+    try {
+      const todos = await listarProdutos("", "");
+      const categorias = Array.from(new Set(todos.map(function (p) { return p.categoria; })));
+      const nav = document.getElementById("categorias");
+      nav.replaceChildren();
+      [""].concat(categorias).forEach(function (c) {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "chip" + (c === categoria ? " ativo" : "");
+        botao.textContent = c || "Todas";
+        botao.addEventListener("click", function () { categoria = c; renderizar(); });
+        nav.appendChild(botao);
+      });
+    } catch (erro) {
+      exibirErro(document.getElementById("erro"), erro);
+    }
+  }
+
+  function cartaoProduto(p) {
+    const esgotado = p.quantidadeDisponivel === 0;
+    return '<a class="card' + (esgotado ? ' sem-estoque' : '') + '" href="produto.html?id=' + encodeURIComponent(p.idProduto) + '">' +
+      '<div class="foto" aria-hidden="true">' + icone(p) + '</div>' +
+      '<div class="info"><div class="nome">' + escaparHtml(p.nomeProduto) + '</div>' +
+      '<div class="preco">' + formatarPreco(p.valor) + '</div>' +
+      (esgotado ? '<div class="esgotado">Esgotado</div>' :
+        '<div class="parcela">Estoque disponível: ' + p.quantidadeDisponivel + '</div>') +
+      '</div></a>';
+  }
+
+  async function renderizar() {
+    const grade = document.getElementById("grade");
+    const erro = document.getElementById("erro");
+    erro.hidden = true;
+    grade.innerHTML = '<div class="carregando">Carregando produtos da API...</div>';
+    try {
+      produtos = await listarProdutos(consulta, categoria);
+      document.getElementById("contagem").textContent =
+        produtos.length + ' produto(s)' + (consulta ? ' para "' + consulta + '"' : "");
+      if (!produtos.length) {
+        grade.innerHTML = '<div class="caixa vazio"><h2>Nenhum produto encontrado</h2><p>Tente outra busca ou categoria.</p><a class="btn auto" href="index.html">Ver todos os produtos</a></div>';
+      } else {
+        grade.innerHTML = produtos.map(cartaoProduto).join("");
+      }
+      await carregarCategorias();
+    } catch (erroApi) {
+      grade.replaceChildren();
+      exibirErro(erro, erroApi);
+      document.getElementById("contagem").textContent = "";
+    }
+  }
+  renderizar();
+</script>
+</body>
+</html>

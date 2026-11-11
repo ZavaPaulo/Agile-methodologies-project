@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produto — Marketplace acadêmico</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina" id="conteudo"><p class="carregando">Carregando produto...</p></main>
+<script src="app.js"></script>
+<script>
+  montarCabecalho();
+  const id = Number(new URLSearchParams(location.search).get("id"));
+  const conteudo = document.getElementById("conteudo");
+
+  function renderizarProduto(p) {
+    document.title = p.nomeProduto + " — Marketplace acadêmico";
+    const esgotado = p.quantidadeDisponivel === 0;
+    conteudo.innerHTML =
+      '<div class="caminho"><a href="index.html">Início</a> › ' + escaparHtml(p.categoria) + ' › ' + escaparHtml(p.nomeProduto) + '</div>' +
+      '<div class="produto"><section><div class="foto">' + icone(p) + '</div>' +
+      '<div class="caixa descricao"><h2>Descrição</h2><p>' + escaparHtml(p.detalheProduto) + '</p>' +
+      '<p class="suave">Categoria: ' + escaparHtml(p.categoria) + ' · Código: ' + p.idProduto + '</p></div></section>' +
+      '<aside class="caixa"><span class="selo-replica">RÉPLICA ACADÊMICA</span><h1>' + escaparHtml(p.nomeProduto) + '</h1>' +
+      '<div class="preco">' + formatarPreco(p.valor) + '</div>' +
+      '<div class="estoque">' + (esgotado ? '<strong class="esgotado">Esgotado</strong>' :
+        '<strong>Estoque:</strong> ' + p.quantidadeDisponivel + ' unidade(s)') + '</div>' +
+      (esgotado ? '<p class="suave">Este produto não está disponível no momento.</p>' :
+        '<div id="areaCompra"><div class="qtd-linha"><label for="qtd">Quantidade:</label>' +
+        '<input type="number" id="qtd" value="1" min="1" max="' + p.quantidadeDisponivel + '"></div>' +
+        '<div class="erro" id="erroQtd" role="alert"></div>' +
+        '<div class="item">Subtotal estimado: <strong id="subtotal">' + formatarPreco(p.valor) + '</strong></div>' +
+        '<div class="acoes"><button class="btn" id="btnComprar">Comprar agora</button>' +
+        '<button class="btn sec" id="btnCarrinho">Adicionar ao carrinho</button></div>' +
+        '<div class="ok" id="msg" aria-live="polite"></div></div>') +
+      '</aside></div>';
+
+    if (!esgotado) iniciarCompra(p);
+  }
+
+  function iniciarCompra(p) {
+    const campo = document.getElementById("qtd");
+    const erro = document.getElementById("erroQtd");
+    const msg = document.getElementById("msg");
+
+    function lerQuantidade() {
+      const n = Number(campo.value);
+      let texto = "";
+      if (!Number.isInteger(n) || n <= 0) texto = "Digite uma quantidade inteira maior que zero.";
+      else if (n > p.quantidadeDisponivel) texto = "Estoque insuficiente: há " + p.quantidadeDisponivel + " unidade(s).";
+      campo.classList.toggle("invalido", Boolean(texto));
+      erro.textContent = texto;
+      document.getElementById("subtotal").textContent = texto ? "—" : formatarPreco(p.valor * n);
+      return texto ? null : n;
+    }
+
+    campo.addEventListener("input", function () { msg.textContent = ""; lerQuantidade(); });
+    document.getElementById("btnComprar").addEventListener("click", function () {
+      const quantidade = lerQuantidade();
+      if (quantidade) comprarAgora(p.idProduto, quantidade);
+    });
+    document.getElementById("btnCarrinho").addEventListener("click", async function () {
+      const quantidade = lerQuantidade();
+      if (!quantidade) return;
+      try {
+        await adicionarAoCarrinho(p.idProduto, quantidade);
+        msg.textContent = "Produto adicionado ao carrinho.";
+        atualizarBadge();
+      } catch (erroApi) {
+        erro.textContent = erroApi.message;
+      }
+    });
+  }
+
+  if (!Number.isInteger(id) || id <= 0) {
+    conteudo.innerHTML = '<div class="caixa vazio"><h1>Produto não encontrado</h1><a class="btn auto" href="index.html">Voltar ao catálogo</a></div>';
+  } else {
+    buscarPorId(id).then(renderizarProduto).catch(function (erro) {
+      conteudo.innerHTML = '<div class="caixa vazio"><h1>Não foi possível carregar o produto</h1><p>' +
+        escaparHtml(erro.message) + '</p><a class="btn auto" href="index.html">Voltar ao catálogo</a></div>';
+    });
+  }
+</script>
+</body>
+</html>

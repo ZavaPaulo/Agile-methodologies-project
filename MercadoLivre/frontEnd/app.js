@@ -76,8 +76,27 @@ function finalizarCompra(dados) {
   });
 }
 
+function criarProduto(dados) {
+  return requisicaoApi("/produtos", {method:"POST", body:JSON.stringify(dados)});
+}
+
+function atualizarProduto(idProduto, dados) {
+  return requisicaoApi("/produtos/" + encodeURIComponent(idProduto), {
+    method:"PUT",
+    body:JSON.stringify(dados)
+  });
+}
+
+function excluirProduto(idProduto) {
+  return requisicaoApi("/produtos/" + encodeURIComponent(idProduto), {method:"DELETE"});
+}
+
+function listarPedidos() {
+  return requisicaoApi("/pedidos");
+}
+
 function icone(produto) {
-  const icones = {"Periféricos":"🖱️","Áudio":"🎧","Monitores":"🖥️","Móveis":"🪑"};
+  const icones = {"Periféricos":"👀","Áudio":"🎧","Monitores":"🖥️","Móveis":"🪑"};
   return icones[produto.categoria] || "📦";
 }
 
@@ -91,6 +110,7 @@ function montarCabecalho(consulta) {
       '<input name="q" type="search" placeholder="Buscar produtos" aria-label="Buscar produtos">' +
       '<button type="submit" aria-label="Buscar">⌕</button>' +
     '</form>' +
+    '<a class="gerenciar-link" href="admin.html">⚙ Gerenciar anúncios</a>' +
     '<a class="carrinho-link" href="carrinho.html">🛒 Carrinho <span class="badge" id="badge"></span></a>' +
     '<div class="aviso-replica">Projeto acadêmico · sem vínculo com o Mercado Livre</div>';
   const campo = topo.querySelector(".busca input");

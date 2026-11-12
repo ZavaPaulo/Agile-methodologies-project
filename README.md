@@ -7,8 +7,8 @@
 **Projeto:** Réplica simplificada de um marketplace inspirado no Mercado Livre  
 **Repositório:** [Agile-methodologies-project](https://github.com/ZavaPaulo/Agile-methodologies-project)  
 **Status:** Em desenvolvimento  
-**Versão deste documento:** 1.0  
-**Última atualização:** 16/10/2026
+**Versão deste documento:** 1.1  
+**Última atualização:** 12/11/2026
 
 ---
 
@@ -75,7 +75,7 @@ Não há confirmação, na definição atual do projeto, de integração com pag
 
 ## 5. Arquitetura lógica
 
-A arquitetura abaixo é uma proposta de organização por responsabilidades para uma aplicação executada pelo terminal, conforme a definição atual do projeto.
+A arquitetura abaixo descreve a organização por responsabilidades da aplicação: uma interface web que consome a API Java. A interface de terminal (`Main`) permanece como implementação legada e apoio aos testes.
 
 ```text
 Frontend (HTML, CSS e JavaScript)
@@ -194,6 +194,21 @@ Os testes devem cobrir os fluxos normais, entradas inválidas e situações de l
 | Carrinho | Adicionar e remover itens; validar quantidades e conferir subtotais e total. |
 | Integração | Validar o fluxo entre terminal, regras de negócio e coleções em memória. |
 
+### 8.1 Testes automatizados disponíveis
+
+Todos ficam em `MercadoLivre/src/` e são executados pelo `main` de cada classe (botão de executar do IntelliJ) ou pelo terminal, depois de compilar (ver seção 13.2):
+
+| Classe | O que cobre |
+|---|---|
+| `TesteCatalogo` | Vitrine vazia, com um e com vários produtos; listas somente leitura. |
+| `TesteDetalheProduto` | Detalhe de produto, ID inválido e catálogo vazio. |
+| `TesteCheckout` | Registro de pedido, baixa de estoque, compra recusada e cancelamento. |
+| `TesteApi` | Integração HTTP: servidor e frontend, catálogo e busca, carrinho, "Comprar agora" sem consumir o carrinho, finalização, CRUD, `PUT` atômico, exclusão e pedidos. |
+
+```bash
+java -cp out/production/Agile-methodologies-project TesteApi
+```
+
 ## 9. Gestão do projeto e colaboração
 
 O planejamento do trabalho é acompanhado no Trello, com listas de tarefas e cards que devem conter:
@@ -237,17 +252,13 @@ A versão será considerada pronta para demonstração quando:
 
 ## 11. Como executar
 
-As instruções definitivas de execução dependem da versão do Java, das ferramentas de build e da estrutura efetivamente configuradas no repositório.
+- **Pré-requisitos:** JDK 21 (o projeto IntelliJ usa `zulu-21`; o código exige no mínimo Java 19, por causa de `Locale.of`). Navegador atualizado.
+- **Instalação:** não há dependências externas nem ferramenta de build; o servidor usa o módulo `jdk.httpserver` do próprio JDK.
+- **Configuração:** opcional. A porta padrão é 8080 e pode ser trocada pelo primeiro argumento ou pela variável de ambiente `PORT`. A pasta do frontend é localizada automaticamente; para forçar outra, use `-Dmarketplace.frontend=<pasta>`.
+- **Execução:** comandos de compilação e inicialização na seção 13.2.
+- **Testes:** classes `Teste*` descritas na seção 8.1.
 
-Antes de publicar este documento como versão final, preencher:
-
-- **Pré-requisitos:** versão do Java, runtime e ferramentas necessárias.
-- **Instalação:** comandos para obter dependências.
-- **Configuração:** arquivos, variáveis e caminhos necessários.
-- **Execução:** comando para iniciar a aplicação.
-- **Testes:** comando para executar a suíte de testes.
-
-A aplicação web integrada usa o módulo `jdk.httpserver` do próprio JDK e não exige framework ou biblioteca externa. Os produtos, carrinhos e pedidos ficam em memória e são reiniciados quando o servidor é encerrado.
+Os produtos, carrinhos e pedidos ficam em memória e são reiniciados quando o servidor é encerrado.
 
 ## 12. Referências do projeto
 
@@ -262,17 +273,18 @@ A aplicação web integrada usa o módulo `jdk.httpserver` do próprio JDK e nã
 | Versão | Data | Descrição |
 |---|---|---|
 | 1.0 | 16/10/2026 | Criação da documentação inicial de visão geral, escopo, regras de negócio, arquitetura proposta, testes e organização do projeto. |
+| 1.1 | 12/11/2026 | Integração frontend/backend revisada: tela de gerenciamento de anúncios, correção do "Comprar agora", `PUT` atômico, sessão tolerante a cookies entre aspas, localização automática do frontend, testes de API e correção da formatação desta documentação. |
 
 **Responsáveis pela manutenção da documentação:** equipe do Agile Methodologies Projects.
 
 
 ## 13. Integração do frontend com o backend
 
-A branch \`IntegracaoFronBack\` conecta as páginas web ao backend Java por uma API HTTP que trafega JSON. O servidor também entrega os arquivos estáticos do frontend na mesma origem, evitando configuração de CORS para a execução local.
+A branch `IntegracaoFronBack` conecta as páginas web ao backend Java por uma API HTTP que trafega JSON. O servidor também entrega os arquivos estáticos do frontend na mesma origem, evitando configuração de CORS para a execução local.
 
 ### 13.1 Pré-requisitos
 
-- JDK 25, conforme o nível de linguagem configurado no projeto IntelliJ.
+- JDK 21, conforme configurado no projeto IntelliJ (mínimo: Java 19).
 - Git para obter a branch.
 - Navegador atualizado.
 
@@ -280,41 +292,57 @@ A branch \`IntegracaoFronBack\` conecta as páginas web ao backend Java por uma 
 
 Na raiz do repositório, compile as classes Java:
 
-\`\`\`bash
+```bash
 javac --add-modules jdk.httpserver -encoding UTF-8 -d out/production/Agile-methodologies-project MercadoLivre/src/*.java
-\`\`\`
+```
 
 Inicie o servidor:
 
-\`\`\`bash
+```bash
 java --add-modules jdk.httpserver -Dmarketplace.frontend=MercadoLivre/frontEnd -cp out/production/Agile-methodologies-project MarketplaceServer
-\`\`\`
+```
 
-Abra \`http://localhost:8080\` no navegador. Para usar outra porta, informe o número como primeiro argumento, por exemplo \`MarketplaceServer 9090\`.
+Abra `http://localhost:8080` no navegador. Para usar outra porta, informe o número como primeiro argumento, por exemplo `MarketplaceServer 9090`.
+
+Ao iniciar, o servidor imprime a pasta do frontend que está usando. Ele a localiza automaticamente tanto na raiz do repositório quanto dentro de `MercadoLivre/` (útil para o IntelliJ); a propriedade `-Dmarketplace.frontend` continua disponível para forçar outro caminho.
+
+Para executar os testes de integração da API (o servidor é iniciado e encerrado pelo próprio teste, em outra porta):
+
+```bash
+java --add-modules jdk.httpserver -cp out/production/Agile-methodologies-project TesteApi
+```
 
 ### 13.3 Endpoints da API
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| GET | \`/api/health\` | Verifica se o servidor está ativo |
-| GET | \`/api/produtos?q=&categoria=\` | Lista, pesquisa e filtra produtos |
-| GET | \`/api/produtos/{id}\` | Consulta produto pelo ID |
-| POST | \`/api/produtos\` | Cadastra produto |
-| PUT | \`/api/produtos/{id}\` | Atualiza produto |
-| DELETE | \`/api/produtos/{id}\` | Exclui produto |
-| GET | \`/api/carrinho\` | Consulta carrinho da sessão |
-| POST | \`/api/carrinho/itens\` | Adiciona item ao carrinho |
-| PATCH | \`/api/carrinho/itens/{id}\` | Atualiza quantidade |
-| DELETE | \`/api/carrinho/itens/{id}\` | Remove item |
-| DELETE | \`/api/carrinho\` | Limpa carrinho |
-| POST | \`/api/compras/finalizar\` | Registra compra simulada |
-| GET | \`/api/pedidos\` | Lista pedidos em memória |
+| GET | `/api/health` | Verifica se o servidor está ativo |
+| GET | `/api/produtos?q=&categoria=` | Lista, pesquisa e filtra produtos |
+| GET | `/api/produtos/{id}` | Consulta produto pelo ID |
+| POST | `/api/produtos` | Cadastra produto |
+| PUT | `/api/produtos/{id}` | Atualiza produto |
+| DELETE | `/api/produtos/{id}` | Exclui produto |
+| GET | `/api/carrinho` | Consulta carrinho da sessão |
+| POST | `/api/carrinho/itens` | Adiciona item ao carrinho |
+| PATCH | `/api/carrinho/itens/{id}` | Atualiza quantidade |
+| DELETE | `/api/carrinho/itens/{id}` | Remove item |
+| DELETE | `/api/carrinho` | Limpa carrinho |
+| POST | `/api/compras/finalizar` | Registra compra simulada |
+| GET | `/api/pedidos` | Lista pedidos em memória |
+
+**Uso no frontend:** o catálogo, o detalhe, o carrinho e o pagamento usam os endpoints de produtos (consulta), carrinho e finalização. A página `admin.html` ("Gerenciar anúncios") usa o CRUD de produtos (`POST`, `PUT`, `DELETE`) e `GET /api/pedidos`. Apenas `DELETE /api/carrinho` e `/api/health` não são chamados pelas telas.
+
+O `PUT /api/produtos/{id}` é atômico: se qualquer campo enviado for inválido, nenhum campo do produto é alterado.
 
 ### 13.4 Sessão e checkout
 
 O carrinho é armazenado no servidor e separado por cookie de sessão do navegador. O frontend não mantém uma lista paralela de produtos nem decide o estoque. O backend valida quantidade, disponibilidade e os dados de entrega antes de registrar a compra.
 
-A classe \`Pedido\` existente representa um produto por pedido. Por compatibilidade com o modelo atual, uma compra com vários produtos gera um pedido por item, com o mesmo endereço e modalidade simulada. A modalidade Pix mantém o desconto demonstrativo de 5%.
+No botão **"Comprar agora"**, o frontend envia `compraDireta: true` junto com o item. Assim, a compra não consome unidades do mesmo produto que já estejam no carrinho; ao finalizar o carrinho, os itens comprados são retirados dele.
+
+O cookie de sessão (`MARKETPLACE_SESSION`) é aceito com ou sem aspas, conforme a RFC 6265, e somente identificadores no formato UUID emitidos pelo servidor são reconhecidos.
+
+A classe `Pedido` existente representa um produto por pedido. Por compatibilidade com o modelo atual, uma compra com vários produtos gera um pedido por item, com o mesmo endereço e modalidade simulada. A modalidade Pix mantém o desconto demonstrativo de 5%.
 
 **Nenhum pagamento é processado.** A aplicação não coleta número de cartão, validade ou CVV, não emite boleto e não se conecta a serviços financeiros.
 
@@ -323,17 +351,19 @@ A classe \`Pedido\` existente representa um produto por pedido. Por compatibilid
 - Produtos, carrinhos e pedidos são mantidos em memória; reiniciar o servidor reinicia os dados.
 - A API não possui autenticação ou autorização administrativa. Não deve ser exposta diretamente à internet.
 - Os dados de entrega são exemplos acadêmicos; não use dados pessoais reais.
-- O conversor \`Json.java\` é uma implementação pequena para os formatos utilizados pela API. Caso o projeto cresça, recomenda-se adotar uma biblioteca JSON mantida, como Jackson.
+- O conversor `Json.java` é uma implementação pequena para os formatos utilizados pela API. Caso o projeto cresça, recomenda-se adotar uma biblioteca JSON mantida, como Jackson.
 - Para implantação real, seriam necessários autenticação, autorização, persistência transacional, proteção contra abuso, logs e controles de privacidade.
 
 ### 13.6 Arquivos da integração
 
-- \`MercadoLivre/src/MarketplaceServer.java\`: servidor HTTP, endpoints REST e entrega das páginas.
-- \`MercadoLivre/src/Json.java\`: conversão entre objetos Java e JSON.
-- \`MercadoLivre/src/Catalogo.java\`: busca e exclusão por identificador.
-- \`MercadoLivre/frontEnd/app.js\`: cliente HTTP compartilhado.
-- \`MercadoLivre/frontEnd/index.html\`: catálogo e pesquisa.
-- \`MercadoLivre/frontEnd/produto.html\`: detalhe e ações do produto.
-- \`MercadoLivre/frontEnd/carrinho.html\`: carrinho por sessão do servidor.
-- \`MercadoLivre/frontEnd/pagamento.html\`: entrega e compra simulada.
-- \`MercadoLivre/frontEnd/estilo.css\`: estilos e identificação acadêmica.
+- `MercadoLivre/src/MarketplaceServer.java`: servidor HTTP, endpoints REST e entrega das páginas.
+- `MercadoLivre/src/Json.java`: conversão entre objetos Java e JSON.
+- `MercadoLivre/src/Catalogo.java`: busca e exclusão por identificador.
+- `MercadoLivre/frontEnd/app.js`: cliente HTTP compartilhado.
+- `MercadoLivre/frontEnd/index.html`: catálogo e pesquisa.
+- `MercadoLivre/frontEnd/produto.html`: detalhe e ações do produto.
+- `MercadoLivre/frontEnd/carrinho.html`: carrinho por sessão do servidor.
+- `MercadoLivre/frontEnd/pagamento.html`: entrega e compra simulada.
+- `MercadoLivre/frontEnd/admin.html`: cadastro, edição e exclusão de anúncios e lista de pedidos.
+- `MercadoLivre/src/TesteApi.java`: testes de integração da API HTTP.
+- `MercadoLivre/frontEnd/estilo.css`: estilos e identificação acadêmica.

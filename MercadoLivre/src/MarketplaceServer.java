@@ -37,11 +37,20 @@ public class MarketplaceServer {
 
     private static final int LIMITE_CORPO = 64 * 1024;
 
+    // Formato dos identificadores de sessão emitidos pelo servidor (UUID).
+    private static final java.util.regex.Pattern SESSAO_VALIDA = java.util.regex.Pattern.compile(
+            "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+
+    // Pasta dos arquivos do frontend (resolvida uma vez, na inicialização).
+    private static Path frontendRaiz;
+
     public static void main(String[] args) throws IOException {
         int porta = obterPorta(args);
 
         // Carrega os mesmos produtos de demonstração já usados pelo projeto.
         CATALOGO.carregarProdutosExemplo();
+
+        frontendRaiz = localizarFrontend();
 
         HttpServer servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", porta), 0);
         servidor.createContext("/api", MarketplaceServer::tratarApi);
@@ -50,8 +59,29 @@ public class MarketplaceServer {
         servidor.start();
 
         System.out.println("Marketplace acadêmico disponível em http://localhost:" + porta);
+        System.out.println("Frontend servido de: " + frontendRaiz
+                + (Files.isDirectory(frontendRaiz) ? "" : "  (ATENÇÃO: pasta não encontrada!)"));
         System.out.println("API: http://localhost:" + porta + "/api/health");
         System.out.println("Projeto independente — réplica acadêmica, sem vínculo com o Mercado Livre.");
+    }
+
+    /**
+     * Descobre a pasta do frontend. Ordem: propriedade -Dmarketplace.frontend; depois
+     * caminhos comuns relativos ao diretório de execução, para que o servidor funcione
+     * tanto na raiz do repositório quanto dentro de MercadoLivre/ (ex.: IntelliJ).
+     */
+    private static Path localizarFrontend() {
+        String configurado = System.getProperty("marketplace.frontend");
+        if (configurado != null && !configurado.isBlank()) {
+            return Paths.get(configurado).toAbsolutePath().normalize();
+        }
+        for (String candidato : List.of("MercadoLivre/frontEnd", "frontEnd", "../MercadoLivre/frontEnd")) {
+            Path caminho = Paths.get(candidato).toAbsolutePath().normalize();
+            if (Files.isDirectory(caminho)) {
+                return caminho;
+            }
+        }
+        return Paths.get("MercadoLivre/frontEnd").toAbsolutePath().normalize();
     }
 
     private static int obterPorta(String[] args) {
@@ -179,20 +209,37 @@ public class MarketplaceServer {
 
                 if ("PUT".equalsIgnoreCase(metodo)) {
                     Map<String, Object> dados = lerObjetoJson(exchange);
-                    if (dados.containsKey("nomeProduto")) {
-                        produto.setNomeProduto(textoObrigatorio(dados, "nomeProduto"));
-                    }
-                    if (dados.containsKey("detalheProduto")) {
-                        produto.setDetalheProduto(textoObrigatorio(dados, "detalheProduto"));
-                    }
-                    if (dados.containsKey("valor")) {
-                        produto.setValor(decimalObrigatorio(dados, "valor"));
-                    }
-                    if (dados.containsKey("quantidadeDisponivel")) {
-                        produto.setQuantidadeDisponivel(inteiroObrigatorio(dados, "quantidadeDisponivel"));
-                    }
-                    if (dados.containsKey("categoria")) {
-                        produto.setCategoria(textoObrigatorio(dados, "categoria"));
+
+                    // Atualização atômica: guarda os valores atuais e, se qualquer campo
+                    // for recusado pelas validações do Produto, desfaz o que já foi aplicado.
+                    String nomeAnterior = produto.getNomeProduto();
+                    String detalheAnterior = produto.getDetalheProduto();
+                    double valorAnterior = produto.getValor();
+                    int estoqueAnterior = produto.getQuantidadeDisponivel();
+                    String categoriaAnterior = produto.getCategoria();
+                    try {
+                        if (dados.containsKey("nomeProduto")) {
+                            produto.setNomeProduto(textoObrigatorio(dados, "nomeProduto"));
+                        }
+                        if (dados.containsKey("detalheProduto")) {
+                            produto.setDetalheProduto(textoObrigatorio(dados, "detalheProduto"));
+                        }
+                        if (dados.containsKey("valor")) {
+                            produto.setValor(decimalObrigatorio(dados, "valor"));
+                        }
+                        if (dados.containsKey("quantidadeDisponivel")) {
+                            produto.setQuantidadeDisponivel(inteiroObrigatorio(dados, "quantidadeDisponivel"));
+                        }
+                        if (dados.containsKey("categoria")) {
+                            produto.setCategoria(textoObrigatorio(dados, "categoria"));
+                        }
+                    } catch (IllegalArgumentException erro) {
+                        produto.setNomeProduto(nomeAnterior);
+                        produto.setDetalheProduto(detalheAnterior);
+                        produto.setValor(valorAnterior);
+                        produto.setQuantidadeDisponivel(estoqueAnterior);
+                        produto.setCategoria(categoriaAnterior);
+                        throw erro;
                     }
                     responderJson(exchange, 200, produtoComoJson(produto));
                     return;
@@ -486,7 +533,16 @@ public class MarketplaceServer {
             for (String parte : cookie.split(";")) {
                 String[] par = parte.trim().split("=", 2);
                 if (par.length == 2 && "MARKETPLACE_SESSION".equals(par[0])) {
-                    return par[1];
+                    // A RFC 6265 permite o valor entre aspas (alguns clientes, como o
+                    // CookieManager do Java, reenviam assim); sem isso a sessão "se perde".
+                    String valor = par[1].trim();
+                    if (valor.length() >= 2 && valor.startsWith("\"") && valor.endsWith("\"")) {
+                        valor = valor.substring(1, valor.length() - 1);
+                    }
+                    // Só aceita identificadores no formato gerado pelo servidor (UUID).
+                    if (SESSAO_VALIDA.matcher(valor).matches()) {
+                        return valor;
+                    }
                 }
             }
         }
@@ -593,9 +649,7 @@ public class MarketplaceServer {
                 return;
             }
 
-            Path raiz = Paths.get(
-                    System.getProperty("marketplace.frontend", "MercadoLivre/frontEnd")
-            ).toAbsolutePath().normalize();
+            Path raiz = frontendRaiz;
 
             String solicitado = exchange.getRequestURI().getPath();
             if (solicitado == null || "/".equals(solicitado)) {

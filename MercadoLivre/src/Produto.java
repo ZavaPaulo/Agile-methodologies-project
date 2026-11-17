@@ -1,6 +1,5 @@
 import java.util.concurrent.atomic.AtomicInteger;
 import java.io.Serializable;
-import java.util.UUID;
 
 public class Produto implements Serializable {
     //Atributos do produto

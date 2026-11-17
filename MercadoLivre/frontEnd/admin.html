@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerenciar anúncios — Marketplace acadêmico</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header id="topo"></header>
+<main class="pagina">
+  <h1>Gerenciar anúncios</h1>
+  <div class="aviso-admin">
+    Área de demonstração acadêmica: não há login nem permissões. Os dados ficam apenas em memória
+    e voltam ao padrão quando o servidor é reiniciado.
+  </div>
+  <p class="mensagem-erro" id="erroGeral" role="alert" hidden></p>
+  <p class="ok" id="msgGeral" aria-live="polite"></p>
+
+  <div class="admin">
+    <section class="caixa">
+      <h2>Anúncios cadastrados</h2>
+      <div class="tabela-rolagem">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th class="num">Cód.</th><th>Produto</th><th>Categoria</th>
+              <th class="num">Preço</th><th class="num">Estoque</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="corpoProdutos"><tr><td colspan="6" class="suave">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="caixa">
+      <h2 id="tituloForm">Novo anúncio</h2>
+      <form id="formProduto" class="form-admin" novalidate>
+        <label>Nome
+          <input name="nomeProduto" maxlength="120" required>
+        </label>
+        <label>Descrição
+          <textarea name="detalheProduto" required></textarea>
+        </label>
+        <label>Categoria
+          <input name="categoria" maxlength="60" required placeholder="Ex.: Periféricos">
+        </label>
+        <div class="duas">
+          <label>Preço (R$)
+            <input name="valor" type="number" step="0.01" min="0.01" required>
+          </label>
+          <label>Estoque
+            <input name="quantidadeDisponivel" type="number" step="1" min="0" required>
+          </label>
+        </div>
+        <p class="mensagem-erro" id="erroForm" role="alert" hidden></p>
+        <button class="btn" type="submit" id="btnSalvar">Cadastrar anúncio</button>
+        <button class="btn sec" type="button" id="btnCancelar" hidden>Cancelar edição</button>
+      </form>
+    </aside>
+  </div>
+
+  <section class="caixa espaco-topo">
+    <h2>Pedidos registrados nesta execução do servidor</h2>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Pedido</th><th>Data</th><th>Produto</th><th class="num">Qtd.</th>
+            <th class="num">Total</th><th>Destinatário</th>
+          </tr>
+        </thead>
+        <tbody id="corpoPedidos"><tr><td colspan="6" class="suave">Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+<script>
+  montarCabecalho();
+
+  const corpoProdutos = document.getElementById("corpoProdutos");
+  const corpoPedidos = document.getElementById("corpoPedidos");
+  const form = document.getElementById("formProduto");
+  const erroForm = document.getElementById("erroForm");
+  const erroGeral = document.getElementById("erroGeral");
+  const msgGeral = document.getElementById("msgGeral");
+  const btnSalvar = document.getElementById("btnSalvar");
+  const btnCancelar = document.getElementById("btnCancelar");
+  const tituloForm = document.getElementById("tituloForm");
+
+  let produtos = [];
+  let idEmEdicao = null;
+
+  function avisar(texto) {
+    msgGeral.textContent = texto || "";
+    erroGeral.hidden = true;
+  }
+
+  function falhar(erro) {
+    msgGeral.textContent = "";
+    exibirErro(erroGeral, erro);
+  }
+
+  function renderizarProdutos() {
+    if (!produtos.length) {
+      corpoProdutos.innerHTML = '<tr><td colspan="6" class="suave">Nenhum anúncio cadastrado.</td></tr>';
+      return;
+    }
+    corpoProdutos.innerHTML = produtos.map(function (p) {
+      return '<tr data-id="' + p.idProduto + '"' + (p.idProduto === idEmEdicao ? ' class="editando"' : '') + '>' +
+        '<td class="num">' + p.idProduto + '</td>' +
+        '<td><a href="produto.html?id=' + encodeURIComponent(p.idProduto) + '">' + escaparHtml(p.nomeProduto) + '</a></td>' +
+        '<td>' + escaparHtml(p.categoria) + '</td>' +
+        '<td class="num">' + formatarPreco(p.valor) + '</td>' +
+        '<td class="num' + (p.quantidadeDisponivel === 0 ? ' zerado' : '') + '">' +
+          (p.quantidadeDisponivel === 0 ? 'Esgotado' : p.quantidadeDisponivel) + '</td>' +
+        '<td><div class="acoes-linha">' +
+          '<button type="button" class="link-acao" data-acao="editar">Editar</button>' +
+          '<button type="button" class="link-acao perigo" data-acao="excluir">Excluir</button>' +
+        '</div></td></tr>';
+    }).join("");
+  }
+
+  function renderizarPedidos(pedidos) {
+    if (!pedidos.length) {
+      corpoPedidos.innerHTML = '<tr><td colspan="6" class="suave">Nenhum pedido registrado ainda.</td></tr>';
+      return;
+    }
+    corpoPedidos.innerHTML = pedidos.slice().reverse().map(function (p) {
+      const data = new Date(p.dataHora);
+      const dataTexto = isNaN(data.getTime()) ? escaparHtml(p.dataHora) : data.toLocaleString("pt-BR");
+      return '<tr><td>' + escaparHtml(p.numero) + '</td><td>' + dataTexto + '</td>' +
+        '<td>' + escaparHtml(p.nomeProduto) + '</td><td class="num">' + p.quantidade + '</td>' +
+        '<td class="num">' + formatarPreco(p.total) + '</td><td>' + escaparHtml(p.destinatario) + '</td></tr>';
+    }).join("");
+  }
+
+  async function carregarTudo() {
+    try {
+      produtos = await listarProdutos("", "");
+      renderizarProdutos();
+      renderizarPedidos(await listarPedidos());
+    } catch (erro) {
+      falhar(erro);
+    }
+  }
+
+  function sairDaEdicao() {
+    idEmEdicao = null;
+    form.reset();
+    erroForm.hidden = true;
+    tituloForm.textContent = "Novo anúncio";
+    btnSalvar.textContent = "Cadastrar anúncio";
+    btnCancelar.hidden = true;
+    renderizarProdutos();
+  }
+
+  function entrarEmEdicao(produto) {
+    idEmEdicao = produto.idProduto;
+    form.elements.nomeProduto.value = produto.nomeProduto;
+    form.elements.detalheProduto.value = produto.detalheProduto;
+    form.elements.categoria.value = produto.categoria;
+    form.elements.valor.value = produto.valor;
+    form.elements.quantidadeDisponivel.value = produto.quantidadeDisponivel;
+    erroForm.hidden = true;
+    tituloForm.textContent = "Editar anúncio #" + produto.idProduto;
+    btnSalvar.textContent = "Salvar alterações";
+    btnCancelar.hidden = false;
+    renderizarProdutos();
+    form.elements.nomeProduto.focus();
+  }
+
+  function lerFormulario() {
+    // Só converte tipos; todas as regras de negócio são validadas pelo backend.
+    return {
+      nomeProduto: form.elements.nomeProduto.value,
+      detalheProduto: form.elements.detalheProduto.value,
+      categoria: form.elements.categoria.value,
+      valor: form.elements.valor.value === "" ? null : Number(form.elements.valor.value),
+      quantidadeDisponivel: form.elements.quantidadeDisponivel.value === "" ? null : Number(form.elements.quantidadeDisponivel.value)
+    };
+  }
+
+  form.addEventListener("submit", async function (evento) {
+    evento.preventDefault();
+    erroForm.hidden = true;
+    btnSalvar.disabled = true;
+    try {
+      if (idEmEdicao === null) {
+        const novo = await criarProduto(lerFormulario());
+        avisar('Anúncio "' + novo.nomeProduto + '" cadastrado com o código ' + novo.idProduto + '.');
+      } else {
+        const atualizado = await atualizarProduto(idEmEdicao, lerFormulario());
+        avisar('Anúncio "' + atualizado.nomeProduto + '" atualizado.');
+      }
+      idEmEdicao = null;
+      form.reset();
+      tituloForm.textContent = "Novo anúncio";
+      btnSalvar.textContent = "Cadastrar anúncio";
+      btnCancelar.hidden = true;
+      await carregarTudo();
+    } catch (erro) {
+      exibirErro(erroForm, erro);
+    } finally {
+      btnSalvar.disabled = false;
+    }
+  });
+
+  btnCancelar.addEventListener("click", function () { sairDaEdicao(); });
+
+  corpoProdutos.addEventListener("click", async function (evento) {
+    const acao = evento.target.dataset.acao;
+    const linha = evento.target.closest("tr[data-id]");
+    if (!acao || !linha) return;
+    const id = Number(linha.dataset.id);
+    const produto = produtos.find(function (p) { return p.idProduto === id; });
+    if (!produto) return;
+
+    if (acao === "editar") {
+      entrarEmEdicao(produto);
+      return;
+    }
+    if (acao === "excluir") {
+      if (!window.confirm('Excluir o anúncio "' + produto.nomeProduto + '"? Ele também sairá dos carrinhos.')) return;
+      try {
+        await excluirProduto(id);
+        avisar('Anúncio "' + produto.nomeProduto + '" excluído.');
+        if (idEmEdicao === id) sairDaEdicao();
+        await carregarTudo();
+        atualizarBadge();
+      } catch (erro) {
+        falhar(erro);
+      }
+    }
+  });
+
+  carregarTudo();
+</script>
+</body>
+</html>

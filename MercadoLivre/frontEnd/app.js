@@ -1,105 +1,146 @@
-// ------------------------------------------------------------------
-// Dados dos produtos: mesmos campos e valores do Catalogo.carregarProdutosExemplo()
-// (Produto.java: idProduto, nomeProduto, detalheProduto, valor,
-//  quantidadeDisponivel, categoria).
-// Na integração Front e Back, é só trocar esta lista pelos dados vindos do Java.
-// ------------------------------------------------------------------
-const PRODUTOS = [
-  { idProduto: 1, nomeProduto: "Mouse Gamer", detalheProduto: "Mouse Gamer RGB 8000 DPI", valor: 300.00, quantidadeDisponivel: 20, categoria: "Periféricos" },
-  { idProduto: 2, nomeProduto: "Teclado Mecânico", detalheProduto: "Teclado mecânico RGB switch blue", valor: 400.00, quantidadeDisponivel: 5, categoria: "Periféricos" },
-  { idProduto: 3, nomeProduto: "Headset Bluetooth", detalheProduto: "Headset sem fio com microfone", valor: 249.90, quantidadeDisponivel: 12, categoria: "Áudio" },
-  { idProduto: 4, nomeProduto: 'Monitor 24"', detalheProduto: "Monitor Full HD 144Hz", valor: 1299.99, quantidadeDisponivel: 3, categoria: "Monitores" },
-  { idProduto: 5, nomeProduto: "Cadeira Gamer", detalheProduto: "Cadeira ergonômica reclinável", valor: 899.00, quantidadeDisponivel: 0, categoria: "Móveis" }
-];
+// Integração HTTP do Marketplace Acadêmico.
+// Os dados oficiais e as regras de estoque são mantidos no backend Java.
+const API_BASE = "/api";
 
-// Ícones provisórios, já que o Produto.java ainda não tem imagem
-const ICONES = { "Periféricos": "🖱️", "Áudio": "🎧", "Monitores": "🖥️", "Móveis": "🪑" };
-const icone = (p) => ICONES[p.categoria] || "📦";
-
-// Mesmo resultado do Catalogo.formatarPreco no Java
-const formatarPreco = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-// ------------------------------------------------------------------
-// Busca (mesma ideia do PesquisaProduto.java: sem acento, sem maiúscula,
-// e o produto precisa conter TODAS as palavras)
-// ------------------------------------------------------------------
-const normalizar = (t) => (t || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-
-function buscarPorId(id) {
-  return PRODUTOS.find((p) => p.idProduto === id) || null;
-}
-
-function listarCategorias() {
-  return [...new Set(PRODUTOS.map((p) => p.categoria))];
-}
-
-function buscar(palavraChave, categoria) {
-  const termos = normalizar(palavraChave).split(/\s+/).filter(Boolean);
-  const cat = normalizar(categoria);
-  return PRODUTOS.filter((p) => {
-    if (cat && normalizar(p.categoria) !== cat) return false;
-    const texto = normalizar(p.nomeProduto + " " + p.detalheProduto);
-    return termos.every((t) => texto.includes(t));
+function escaparHtml(valor) {
+  return String(valor == null ? "" : valor).replace(/[&<>"']/g, function (c) {
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
   });
 }
 
-// ------------------------------------------------------------------
-// Carrinho (fica no localStorage do navegador: lista de {id, qtd})
-// ------------------------------------------------------------------
-function lerCarrinho() {
-  try { return JSON.parse(localStorage.getItem("carrinho")) || []; }
-  catch (e) { return []; }
+function formatarPreco(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"});
 }
 
-function salvarCarrinho(carrinho) {
-  localStorage.setItem("carrinho", JSON.stringify(carrinho));
-  atualizarBadge();
+async function requisicaoApi(caminho, opcoes) {
+  opcoes = opcoes || {};
+  const configuracao = Object.assign({
+    method: "GET",
+    credentials: "same-origin",
+    headers: {}
+  }, opcoes);
+  if (configuracao.body) {
+    configuracao.headers = Object.assign({"Content-Type":"application/json"}, configuracao.headers);
+  }
+  const resposta = await fetch(API_BASE + caminho, configuracao);
+  if (resposta.status === 204) return null;
+  const dados = await resposta.json().catch(function () { return {}; });
+  if (!resposta.ok) {
+    throw new Error(dados.erro || ("Falha na solicitação HTTP " + resposta.status + "."));
+  }
+  return dados;
 }
 
-function qtdNoCarrinho(id) {
-  const item = lerCarrinho().find((i) => i.id === id);
-  return item ? item.qtd : 0;
+function listarProdutos(consulta, categoria) {
+  const parametros = new URLSearchParams();
+  if (consulta) parametros.set("q", consulta);
+  if (categoria) parametros.set("categoria", categoria);
+  const query = parametros.toString();
+  return requisicaoApi("/produtos" + (query ? "?" + query : ""));
 }
 
-// Devolve false se passar do estoque (nada é alterado)
-function adicionarAoCarrinho(id, qtd) {
-  const p = buscarPorId(id);
-  const carrinho = lerCarrinho();
-  const item = carrinho.find((i) => i.id === id);
-  const nova = (item ? item.qtd : 0) + qtd;
-  if (!p || nova > p.quantidadeDisponivel) return false;
-  if (item) item.qtd = nova; else carrinho.push({ id, qtd });
-  salvarCarrinho(carrinho);
-  return true;
+function buscarPorId(id) {
+  return requisicaoApi("/produtos/" + encodeURIComponent(id));
 }
 
-// Guarda a compra no mesmo formato do objeto "compra" do pagamento.html
-function comprarAgora(id, qtd) {
-  const p = buscarPorId(id);
-  localStorage.setItem("compraAtual", JSON.stringify({
-    produto: { idProduto: p.idProduto, nomeProduto: p.nomeProduto, valor: p.valor },
-    quantidade: qtd
-  }));
-  location.href = "pagamento.html";
+function carregarCarrinho() {
+  return requisicaoApi("/carrinho");
 }
 
-// ------------------------------------------------------------------
-// Cabeçalho (igual em todas as páginas)
-// ------------------------------------------------------------------
-function atualizarBadge() {
-  const total = lerCarrinho().reduce((soma, i) => soma + i.qtd, 0);
-  const badge = document.getElementById("badge");
-  if (badge) badge.textContent = total > 0 ? total : "";
+function adicionarAoCarrinho(idProduto, quantidade) {
+  return requisicaoApi("/carrinho/itens", {
+    method:"POST",
+    body:JSON.stringify({idProduto:idProduto, quantidade:quantidade})
+  });
+}
+
+function atualizarQuantidadeCarrinho(idProduto, quantidade) {
+  return requisicaoApi("/carrinho/itens/" + encodeURIComponent(idProduto), {
+    method:"PATCH",
+    body:JSON.stringify({quantidade:quantidade})
+  });
+}
+
+function removerDoCarrinho(idProduto) {
+  return requisicaoApi("/carrinho/itens/" + encodeURIComponent(idProduto), {method:"DELETE"});
+}
+
+function limparCarrinho() {
+  return requisicaoApi("/carrinho", {method:"DELETE"});
+}
+
+function finalizarCompra(dados) {
+  return requisicaoApi("/compras/finalizar", {
+    method:"POST",
+    body:JSON.stringify(dados)
+  });
+}
+
+function criarProduto(dados) {
+  return requisicaoApi("/produtos", {method:"POST", body:JSON.stringify(dados)});
+}
+
+function atualizarProduto(idProduto, dados) {
+  return requisicaoApi("/produtos/" + encodeURIComponent(idProduto), {
+    method:"PUT",
+    body:JSON.stringify(dados)
+  });
+}
+
+function excluirProduto(idProduto) {
+  return requisicaoApi("/produtos/" + encodeURIComponent(idProduto), {method:"DELETE"});
+}
+
+function listarPedidos() {
+  return requisicaoApi("/pedidos");
+}
+
+function icone(produto) {
+  const icones = {"Periféricos":"🖱️","Áudio":"🎧","Monitores":"🖥️","Móveis":"🪑"};
+  return icones[produto.categoria] || "📦";
 }
 
 function montarCabecalho(consulta) {
-  document.getElementById("topo").innerHTML = `
-    <a class="marca" href="index.html">Mercado Livre</a>
-    <form class="busca" action="index.html">
-      <input name="q" type="search" placeholder="Buscar produtos" aria-label="Buscar produtos">
-      <button aria-label="Buscar">🔍</button>
-    </form>
-    <a class="carrinho-link" href="carrinho.html">🛒 Carrinho<span class="badge" id="badge"></span></a>`;
-  document.querySelector(".busca input").value = consulta || "";
+  const topo = document.getElementById("topo");
+  if (!topo) return;
+  topo.innerHTML =
+    '<a class="marca" href="index.html">Marketplace acadêmico' +
+      '<small>Somente uma réplica independente</small></a>' +
+    '<form class="busca" action="index.html">' +
+      '<input name="q" type="search" placeholder="Buscar produtos" aria-label="Buscar produtos">' +
+      '<button type="submit" aria-label="Buscar">⌕</button>' +
+    '</form>' +
+    '<a class="gerenciar-link" href="admin.html">⚙ Gerenciar anúncios</a>' +
+    '<a class="carrinho-link" href="carrinho.html">🛒 Carrinho <span class="badge" id="badge"></span></a>' +
+    '<div class="aviso-replica">Projeto acadêmico · sem vínculo com o Mercado Livre</div>';
+  const campo = topo.querySelector(".busca input");
+  if (campo) campo.value = consulta || "";
   atualizarBadge();
+}
+
+async function atualizarBadge() {
+  const badge = document.getElementById("badge");
+  if (!badge) return;
+  try {
+    const carrinho = await carregarCarrinho();
+    const quantidade = (carrinho.itens || []).reduce(function (total, item) {
+      return total + item.quantidade;
+    }, 0);
+    badge.textContent = quantidade > 0 ? String(quantidade) : "";
+  } catch (erro) {
+    badge.textContent = "";
+  }
+}
+
+function exibirErro(elemento, erro) {
+  if (!elemento) return;
+  elemento.textContent = erro && erro.message ? erro.message : String(erro || "Ocorreu um erro.");
+  elemento.hidden = false;
+}
+
+function comprarAgora(idProduto, quantidade) {
+  const destino = new URL("pagamento.html", location.href);
+  destino.searchParams.set("produto", idProduto);
+  destino.searchParams.set("qtd", quantidade);
+  location.href = destino.toString();
 }

@@ -124,4 +124,27 @@ public class Catalogo {
     public static String formatarPreco(double valor) {
         return String.format(BRASIL, "R$ %,.2f", valor);
     }
+
+    /**
+     * Localiza um produto pelo identificador único.
+     * @param id identificador do produto
+     * @return produto encontrado ou null quando não existir
+     */
+    public synchronized Produto buscarPorId(int id) {
+        for (Produto produto : produtos) {
+            if (produto.getIdProduto() == id) {
+                return produto;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Remove do catálogo o produto identificado pelo ID.
+     * @return true quando um produto foi removido
+     */
+    public synchronized boolean removerProduto(int id) {
+        return produtos.removeIf(produto -> produto.getIdProduto() == id);
+    }
+
 }

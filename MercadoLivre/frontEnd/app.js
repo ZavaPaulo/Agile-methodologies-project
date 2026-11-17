@@ -96,7 +96,7 @@ function listarPedidos() {
 }
 
 function icone(produto) {
-  const icones = {"Periféricos":"👀","Áudio":"🎧","Monitores":"🖥️","Móveis":"🪑"};
+  const icones = {"Periféricos":"🖱️","Áudio":"🎧","Monitores":"🖥️","Móveis":"🪑"};
   return icones[produto.categoria] || "📦";
 }
 
